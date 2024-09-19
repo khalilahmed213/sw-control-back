@@ -16,12 +16,12 @@ exports.createAutorisation = async (req, res) => {
     const currentDate = moment().format('DD-MM-YYYY');
     const  référence = `A-${autorisationId}-${currentDate}`;
     const { userId, date, heureDebut, heureFin } = req.body;
-    const calculateProduction = (startTime, endTime) => {
+    const calculateNbrHeure = (startTime, endTime) => {
       const start = moment(startTime, 'HH:mm');
       const end = moment(endTime, 'HH:mm');
       return end.diff(start, 'minutes'); 
     };
-    const nbrheures =calculateProduction(heureDebut,heureFin);
+    const nbrheures =calculateNbrHeure(heureDebut,heureFin);
     await Autorisation.create({
       référence,
       userId,
@@ -157,7 +157,6 @@ exports.toggleAutorisationStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { newStatus } = req.body;
-
     if (!['accepté', 'en attente', 'rejeté'].includes(newStatus)) {
       return res.status(400).json({ message: 'Invalid status. Must be "accepté", "en attente", or "rejeté".' });
     }

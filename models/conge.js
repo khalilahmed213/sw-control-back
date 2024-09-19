@@ -12,6 +12,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    raison: {  // Added reference field
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     nbrDeJour: {  // Added nbrDeJour field
       type: DataTypes.INTEGER,
       allowNull: true
