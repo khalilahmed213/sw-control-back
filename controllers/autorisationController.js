@@ -170,9 +170,10 @@ exports.toggleAutorisationStatus = async (req, res) => {
 
     await autorisation.update({ status: newStatus });
 
-    res.json({ message: 'Autorisation status updated successfully', autorisation });
+    res.json({ message: 'Autorisation status updated successfully' });
   } catch (error) {
     console.error('Error in toggleAutorisationStatus:', error);
     res.status(500).json({ message: error.message });
   }
 };
+

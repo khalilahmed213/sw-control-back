@@ -38,7 +38,11 @@ module.exports = {
         limit: limit,
         offset: offset,
         order: orderClause,
-        attributes: ['id', 'name', 'email', 'months', 'phoneNumber', 'address']
+        attributes: ['id', 'name', 'email', 'phoneNumber', 'address'], // Removed months from here
+        include: [{ // Added include for UserInfo
+          model: db.UserInfo,
+          attributes: ['months'] // Selecting months from UserInfo
+        }]
       });
 
       // Calculate total pages

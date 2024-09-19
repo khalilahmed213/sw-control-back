@@ -24,10 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: true
     },
-    months: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
+  
     phoneNumber: {  // Added phoneNumber field
       type: DataTypes.STRING,
       allowNull: true
@@ -39,9 +36,15 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   User.associate = function(models) {
+
     User.belongsToMany(models.Project, { through: 'UserProject', foreignKey: 'userId' });
+
     User.hasMany(models.Presence, { foreignKey: 'UserId', onDelete: 'CASCADE' });
+
     User.hasMany(models.Absence, { foreignKey: 'UserId', onDelete: 'CASCADE' });
+
+    User.hasOne(models.UserInfo, { foreignKey: 'userId', onDelete: 'CASCADE' }); // One-to-one relationship
+
   };
 
   return User;
