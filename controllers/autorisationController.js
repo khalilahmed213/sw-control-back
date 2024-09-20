@@ -46,6 +46,13 @@ exports.getAllAutorisations = async (req, res) => {
       whereClause.userId = parseInt(agentId, 10);
     }
 
+    let order = [];
+    if (sortBy === 'User.name') {
+      order = [[{ model: User, as: 'User' }, 'name', sortOrder]];
+    } else {
+      order = [[sortBy, sortOrder]];
+    }
+
     const queryOptions = {
       where: whereClause,
       include: [{
@@ -53,7 +60,7 @@ exports.getAllAutorisations = async (req, res) => {
         as: 'User',
         attributes: ['id', 'name']
       }],
-      order: [[sortBy, sortOrder]]
+      order: order // Use updated order
     };
 
     // Add pagination if both page and limit are provided

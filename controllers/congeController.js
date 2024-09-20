@@ -1,4 +1,4 @@
-const { Conge, User } = require('../models');
+const { Conge, User,UserInfo } = require('../models');
 const moment = require('moment');
 
 // Create a new conge
@@ -23,14 +23,28 @@ exports.createConge = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
-// Get all conges
 exports.getAllConges = async (req, res) => {
   try {
-    const { page, limit, sortBy , sortOrder} = req.query; // Default sorting
+    const { page, limit, sortBy, sortOrder, userId } = req.query;
+    const whereClause = {};
+    if (userId && !isNaN(parseInt(userId, 10))) {
+      whereClause.userId = userId;
+    } 
+    let order = [];
+    if (sortBy === 'User.name') {
+      order = [[{ model: User, as: 'User' }, 'name', sortOrder]];
+    } else if (sortBy === 'User.UserInfo.soldeConge') {
+      order = [[{ model: User, as: 'User' }, { model: UserInfo, as: 'UserInfo' }, 'soldeConge', sortOrder]];
+    } else {
+      order = [[sortBy, sortOrder]];
+    }
+
     const queryOptions = {
-      include: [{ model: User, as: 'User', attributes: ['id', 'name'] }],
-      order: [[sortBy, sortOrder]]
+      where: whereClause,
+      include: [
+        { model: User, as: 'User', attributes: ['id', 'name'], include: [{ model: UserInfo, as: 'UserInfo', attributes: ['soldeConge'] }] } // Include UserInfo through User
+      ],
+      order: order // Use updated order
     };
 
     // Add pagination if both page and limit are provided
@@ -124,7 +138,7 @@ exports.toggleCongeStatus = async (req, res) => {
     const { id } = req.params;
     const { newStatus } = req.body;
 
-    if (!['en attente', 'approuvé', 'rejeté'].includes(newStatus)) {
+    if (!['accepté', 'en attente', 'rejeté'].includes(newStatus))  {
       return res.status(400).json({ message: 'Invalid status. Must be "en attente", "approuvé", or "rejeté".' });
     }
 
