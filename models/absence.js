@@ -8,13 +8,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true
       },
-      status: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-          isIn: [['en attente', 'accepté', 'rejeté']]
-        }
-      },
+    
       startDate: {
         type: DataTypes.DATEONLY,
         allowNull: true
