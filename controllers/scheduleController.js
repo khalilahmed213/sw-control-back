@@ -17,12 +17,6 @@ exports.createSchedule = async (req, res) => {
       return res.status(400).json({ success: false, message: 'La date de début et la date de fin sont requises' });
     }
 
-    // Check if the dates are valid
-    if (new Date(startDate) >= new Date(endDate)) {
-      return res.status(400).json({ success: false, message: 'La date de fin doit être après la date de début' });
-    }
-
-    // Check for overlapping schedules
     const overlappingSchedule = await Schedule.findOne({
       where: {
         [Op.or]: [
@@ -41,22 +35,8 @@ exports.createSchedule = async (req, res) => {
     if (overlappingSchedule) {
       return res.status(400).json({ success: false, message: 'Les dates sélectionnées se chevauchent avec un horaire existant' });
     }
-
-    // Check if there is already a selected schedule
-    const selectedSchedule = await Schedule.findOne({ where: { isSelected: true } });
-
-    // Create the new schedule as selected
-    const newSchedule = await Schedule.create({
-      ...req.body,
-      isSelected: true // Create the new schedule as selected
-    });
-
-    // If there was a previously selected schedule, deselect it
-    if (selectedSchedule) {
-      await selectedSchedule.update({ isSelected: false });
-    }
-
-    res.status(201).json({ success: true, message: "Horaire créé avec succès", data: newSchedule });
+    await Schedule.create(req.body)
+    res.status(201).json({ success: true, message: "Horaire créé avec succès" });
   } catch (error) {
     console.error('Erreur lors de la création de l\'horaire:', error);
     res.status(500).json({ success: false, message: 'Erreur lors de la création de l\'horaire' });

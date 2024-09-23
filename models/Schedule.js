@@ -54,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
     });
     Schedule.hasOne(models.Absence, {
       foreignKey: {
-        allowNull: false
+        allowNull: true
       }
     });
   };

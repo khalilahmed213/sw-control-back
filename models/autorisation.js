@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     heureDebut: {
       type: DataTypes.TIME,
-      allowNull:true
+      allowNull: true
     },
     heureFin: {
       type: DataTypes.TIME,
@@ -36,6 +36,13 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: {
         name: 'userId',
         allowNull: false
+      }
+    });
+    Autorisation.hasOne(models.Absence, {
+      foreignKey: 'absenceableId',
+      constraints: false,
+      scope: {
+        absenceable: 'Autorisation'
       }
     });
   };

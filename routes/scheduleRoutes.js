@@ -19,7 +19,6 @@ router.put('/:id', scheduleController.updateSchedule);
 router.delete('/:id', scheduleController.deleteSchedule);
 
 // PUT toggle isSelected for a schedule
-router.put('/toggle-selected/:id', scheduleController.toggleSelected);
 router.get('/getisselected',scheduleController.selectedschedule)
 router.get('/getrecuring',scheduleController.checkIfScheduleIsRecurring)
 

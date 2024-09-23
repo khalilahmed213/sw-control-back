@@ -1,28 +1,27 @@
-const { Autorisation, User } = require('../models');
+const { Autorisation, User, Absence } = require('../models');
 const moment = require('moment');
 const { Op } = require('sequelize');
 
 // Create a new autorisation
 exports.createAutorisation = async (req, res) => {
   try {
-    // Find the last autorisation to get the highest ID
     const lastAutorisation = await Autorisation.findOne({
       order: [['id', 'DESC']],
     });
 
-    // Increment the ID or start from 1 if no autorisations exist
     const autorisationId = lastAutorisation ? lastAutorisation.id + 1 : 1;
-
     const currentDate = moment().format('DD-MM-YYYY');
-    const  référence = `A-${autorisationId}-${currentDate}`;
+    const référence = `A-${autorisationId}-${currentDate}`;
     const { userId, date, heureDebut, heureFin } = req.body;
+    
     const calculateNbrHeure = (startTime, endTime) => {
       const start = moment(startTime, 'HH:mm');
       const end = moment(endTime, 'HH:mm');
       return end.diff(start, 'minutes'); 
     };
-    const nbrheures =calculateNbrHeure(heureDebut,heureFin);
-    await Autorisation.create({
+    const nbrheures = calculateNbrHeure(heureDebut, heureFin);
+    
+    const autorisation = await Autorisation.create({
       référence,
       userId,
       date,
@@ -32,12 +31,82 @@ exports.createAutorisation = async (req, res) => {
       status: 'en attente'
     });
 
+    // Create associated Absence record
+    await Absence.create({
+      type: 'autorisation',
+      startDate: date,
+      endDate: date,
+      raison: 'Autorisation',
+      absenceable: 'Autorisation',
+      absenceableId: autorisation.id
+    });
+
     res.status(201).json({message: 'Autorisation ajoutée avec succès'});
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
+// Other methods remain largely the same, but we need to update the delete method
+
+// Delete an autorisation
+exports.deleteAutorisation = async (req, res) => {
+  try {
+    const autorisation = await Autorisation.findByPk(req.params.id);
+    if (autorisation) {
+      // Delete associated Absence record
+      await Absence.destroy({
+        where: {
+          absenceable: 'Autorisation',
+          absenceableId: autorisation.id
+        }
+      });
+
+      await autorisation.destroy();
+      res.json({ message: 'Autorisation supprimée avec succès' });
+    } else {
+      res.status(404).json({ message: 'Autorisation not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update an autorisation
+exports.updateAutorisation = async (req, res) => {
+  try {
+    const { reference, agentId, dateAutorisation, heureDebut, heureFin, nbrheures, status } = req.body;
+    const autorisation = await Autorisation.findByPk(req.params.id);
+    if (autorisation) {
+      await autorisation.update({
+        reference,
+        agentId,
+        dateAutorisation,
+        heureDebut,
+        heureFin,
+        nbrheures,
+        status
+      });
+
+      // Update associated Absence record
+      await Absence.update({
+        startDate: dateAutorisation,
+        endDate: dateAutorisation,
+      }, {
+        where: {
+          absenceable: 'Autorisation',
+          absenceableId: autorisation.id
+        }
+      });
+
+      res.json({message: 'Autorisation modifiée avec succès'});
+    } else {
+      res.status(404).json({ message: 'Autorisation not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 exports.getAllAutorisations = async (req, res) => {
   try {
     const { page, limit, sortBy, sortOrder, agentId } = req.query;
@@ -84,81 +153,6 @@ exports.getAllAutorisations = async (req, res) => {
   }
 };
 
-// Get a single autorisation by id
-
-
-// Update an autorisation
-exports.updateAutorisation = async (req, res) => {
-  try {
-    const { reference, agentId, dateAutorisation, heureDebut, heureFin, nbrheures, status } = req.body;
-    const autorisation = await Autorisation.findByPk(req.params.id);
-    if (autorisation) {
-      await autorisation.update({
-        reference,
-        agentId,
-        dateAutorisation,
-        heureDebut,
-        heureFin,
-        nbrheures,
-        status
-      });
-      res.json({message: 'Autorisation modifiée avec succès'});
-    } else {
-      res.status(404).json({ message: 'Autorisation not found' });
-    }
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-// Delete an autorisation
-exports.deleteAutorisation = async (req, res) => {
-  try {
-    const autorisation = await Autorisation.findByPk(req.params.id);
-    if (autorisation) {
-      await autorisation.destroy();
-      res.json({ message: 'Autorisation supprimée avec succès' });
-    } else {
-      res.status(404).json({ message: 'Autorisation not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Get autorisations for a specific user
-exports.getUserAutorisations = async (req, res) => {
-  try {
-    const userId = req.query.userId;
-    const page = parseInt(req.query.page);
-    const limit = parseInt(req.query.limit);
-    const sortBy = req.query.sortBy;
-    const sortOrder = req.query.sortOrder;
-    const offset = (page - 1) * limit;
-
-    if (!userId) {
-      return res.status(400).json({ message: 'User ID is required' });
-    }
-    const autorisations = await Autorisation.findAndCountAll({
-      where: { userId: userId },
-      include: [{ model: User, as: 'User', attributes: ['id', 'name'] }],
-      order: [[sortBy, sortOrder]],
-      limit: limit,
-      offset: offset,
-    });
-
-    res.json({
-      autorisations: autorisations.rows,
-      totalPages: Math.ceil(autorisations.count / limit),
-      currentPage: page,
-      totalItems: autorisations.count
-    });
-  } catch (error) {
-    console.error('Error in getUserAutorisations:', error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
 // Toggle autorisation status
 exports.toggleAutorisationStatus = async (req, res) => {
   try {
@@ -182,4 +176,3 @@ exports.toggleAutorisationStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-

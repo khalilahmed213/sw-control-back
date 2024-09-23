@@ -10,6 +10,7 @@ const presenceRoutes = require('./routes/presenceRoutes');
 const penaliteRoutes = require('./routes/penaliteRoutes');
 const autorisationRoutes = require('./routes/autorisationRoutes')
 const congeRoutes = require('./routes/congeRoutes')
+const { updateSchedule } = require('./cron/scheduleCron');
 const app = express();
 
 
@@ -31,4 +32,5 @@ db.sequelize.sync().then(()=>
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 }));
+updateSchedule();
 /*{ alter: true }*/

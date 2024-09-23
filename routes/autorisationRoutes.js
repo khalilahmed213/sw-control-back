@@ -19,6 +19,6 @@ router.put('/autorisations/:id', autorisationController.updateAutorisation);
 router.delete('/autorisations/:id', autorisationController.deleteAutorisation);
 
 // Get autorisations for a specific user
-router.get('/autorisation', autorisationController.getUserAutorisations);
+router.get('/autorisation', autorisationController.getAllAutorisations);
 router.put('/autorisation/:id', autorisationController.toggleAutorisationStatus);
 module.exports = router;

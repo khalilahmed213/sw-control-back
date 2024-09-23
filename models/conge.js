@@ -1,41 +1,48 @@
 module.exports = (sequelize, DataTypes) => {
   const Conge = sequelize.define('Conge', {
-    startDate: {  // Added startDate field
+    startDate: {
       type: DataTypes.DATE,
       allowNull: true
     },
-    endDate: {  // Added endDate field
+    endDate: {
       type: DataTypes.DATE,
       allowNull: true
     },
-    reference: {  // Added reference field
+    reference: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    raison: {  // Added reference field
+    raison: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    nbrDeJour: {  // Added nbrDeJour field
+    nbrDeJour: {
       type: DataTypes.INTEGER,
       allowNull: true
     },
-    status: {  // Added status field
+    status: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    userId: {  // Foreign key to User
+    userId: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'Users',  // Ensure this matches the User model name
+        model: 'Users',
         key: 'id'
       }
     }
   });
 
   Conge.associate = function(models) {
-    Conge.belongsTo(models.User, { foreignKey: 'userId' });  // Association with User
+    Conge.belongsTo(models.User, { foreignKey: 'userId' });
+    Conge.hasOne(models.Absence, {
+      foreignKey: 'absenceableId',
+      constraints: false,
+      scope: {
+        absenceable: 'Conge'
+      }
+    });
   };
 
   return Conge;
