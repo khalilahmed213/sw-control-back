@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+  
     startDate: {
       type: DataTypes.DATEONLY,
       allowNull: true
@@ -19,34 +20,23 @@ module.exports = (sequelize, DataTypes) => {
     référence: {
       type: DataTypes.STRING,
       allowNull: true
-    },
-    absenceable: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    absenceableId: {
-      type: DataTypes.INTEGER,
-      allowNull: false
     }
   });
 
   Absence.associate = function(models) {
-    Absence.belongsTo(models.User, {
-      foreignKey: 'absenceableId',
-      constraints: false,
-      as: 'user'
-    });
-    Absence.belongsTo(models.Autorisation, {
-      foreignKey: 'absenceableId',
-      constraints: false,
-      as: 'autorisation'
-    });
-    Absence.belongsTo(models.Conge, {
-      foreignKey: 'absenceableId',
-      constraints: false,
-      as: 'conge'
-    });
-  };
+      // Define one-to-many relationship with Schedule
+      Absence.belongsTo(models.Schedule, {
+        foreignKey: {
+          allowNull: true
+        }
+      });
+      // Define many-to-one relationship with User
+      Absence.belongsTo(models.User, {
+        foreignKey: {
+          allowNull: true
+        }
+      });
+    };
 
   return Absence;
-};
+}; 

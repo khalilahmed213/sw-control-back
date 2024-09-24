@@ -24,30 +24,28 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: true
     },
-    phoneNumber: {
+  
+    phoneNumber: {  // Added phoneNumber field
       type: DataTypes.STRING,
       allowNull: true
     },
-    address: {
+    address: {  // Added address field
       type: DataTypes.STRING,
       allowNull: true
     },
   });
 
   User.associate = function(models) {
+
     User.belongsToMany(models.Project, { through: 'UserProject', foreignKey: 'userId' });
+
     User.hasMany(models.Presence, { foreignKey: 'UserId', onDelete: 'CASCADE' });
-    User.hasMany(models.Absence, { 
-      foreignKey: 'absenceableId',
-      constraints: false,
-      scope: {
-        absenceable: 'User'
-      }
-    });
-    User.hasOne(models.UserInfo, { foreignKey: 'userId', onDelete: 'CASCADE' });
-    User.hasMany(models.Autorisation, { foreignKey: 'userId' });
-    User.hasMany(models.Conge, { foreignKey: 'userId' });
+
+    User.hasMany(models.Absence, { foreignKey: 'UserId', onDelete: 'CASCADE' });
+
+    User.hasOne(models.UserInfo, { foreignKey: 'userId', onDelete: 'CASCADE' }); // One-to-one relationship
+
   };
 
   return User;
-};
+}; 

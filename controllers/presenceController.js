@@ -267,13 +267,13 @@ const presenceController = {
         };
 
         // Determine if the schedule is recurring
-        const scheduleId = presence ? presence.ScheduleId : (absence ? absence.ScheduleId : null);
+     /*    const scheduleId = presence ? presence.ScheduleId : (absence ? absence.ScheduleId : null);
         if (scheduleId && isRecurring === null) {
           const schedule = await Schedule.findByPk(scheduleId);
           if (schedule) {
             isRecurring = schedule.isRecurring;
           }
-        }
+        } */
 
         return {
           userId: user.id,
@@ -295,58 +295,16 @@ const presenceController = {
 
       res.json({
         data: result,
-        recordsFound: recordsFound,
-        isRecurring: isRecurring,
         totalItems: count,
         totalPages: totalPages,
         currentPage: parseInt(page)
       });
     } catch (error) {
       console.error(error);
-      res.status(500).send('Server Error');
+      res.status(500).json(error.message);
     }
   },
-  async deleteRecordsWithDifferentSchedule(req, res) {
-    const { scheduleId } = req.body;
-    
-    try {
-      const today = moment().startOf('day').toDate();
-      const endOfDay = moment().endOf('day').toDate();
-
-      // Delete Presences with a different schedule
-      await Presence.destroy({
-        where: {
-          ScheduleId: {
-            [Op.ne]: scheduleId
-          },
-          createdAt: {
-            [Op.gte]: today,
-            [Op.lte]: endOfDay
-          }
-        }
-      });
-
-      // Delete Absences with a different schedule
-     await Absence.destroy({
-        where: {
-          ScheduleId: {
-            [Op.ne]: scheduleId
-          },
-          createdAt: {
-            [Op.gte]: today,
-            [Op.lte]: endOfDay
-          }
-        }
-      });
-
-      res.json({
-        message: 'Records deleted successfully',
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('Server Error');
-    }
-  }
+  
 };
 
 module.exports = presenceController;

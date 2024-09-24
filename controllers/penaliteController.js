@@ -40,7 +40,7 @@ exports.getPenalites = async (req, res) => {
     const whereClause = {
       role: 'employe',
       [Op.or]: [
-        { name: { [Op.like]: `%${search}%` } }
+        { name: { [Op.like]: `%${search}%` } } 
       ]
     };
 
@@ -75,7 +75,7 @@ exports.getPenalites = async (req, res) => {
       distinct: true, // Add this to get the correct count when using include
     });
 
-    // Process the results to calculate `nbrDeJour` and format the response
+    // Process the results to calculate nbrDeJour and format the response
     const result = rows.flatMap(user =>
       user.Absences.map(absence => {
         const nbrDeJour = moment(absence.endDate).diff(moment(absence.startDate), 'days') + 1;

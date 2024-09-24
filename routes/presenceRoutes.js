@@ -13,6 +13,5 @@ router.post('/presence/add', presenceController.addPresence);
 
 // Route to get today's presence and absence
 router.get('/presence/fetch', presenceController.getPresenceAndAbsence);
-router.delete('/checkScheduleanddelete',presenceController.deleteRecordsWithDifferentSchedule);
 
 module.exports = router;
