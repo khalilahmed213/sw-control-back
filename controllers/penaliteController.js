@@ -1,4 +1,4 @@
-const { Absence, User } = require('../models');
+const { Penalite, User, Schedule } = require('../models');
 const moment = require('moment');
 const { Op } = require('sequelize');
 
@@ -7,11 +7,15 @@ exports.createPenalite = async (req, res) => {
   try {
     const { raison, startDate, endDate, ScheduleId, UserId } = req.body;
 
-    const penalite = await Absence.create({
-      type: 'penalite',
+    // Calculate nbrDeJour
+    const nbrDeJour = moment(endDate).diff(moment(startDate), 'days') + 1;
+
+    const penalite = await Penalite.create({
       raison,
       startDate,
       endDate,
+      nbrDeJour,
+      ScheduleId,
       UserId
     });
 
@@ -53,7 +57,7 @@ exports.getPenalites = async (req, res) => {
     if (sortBy === 'agent') {
       orderClause = [['name', sortDesc ? 'DESC' : 'ASC']];
     } else if (['startDate', 'endDate', 'raison'].includes(sortBy)) {
-      orderClause = [[{ model: Absence, as: 'Absences' }, sortBy, sortDesc ? 'DESC' : 'ASC']];
+      orderClause = [[{ model: Penalite, as: 'Penalites' }, sortBy, sortDesc ? 'DESC' : 'ASC']];
     } else {
       orderClause = [['name', sortDesc ? 'DESC' : 'ASC']]; // Default to sorting by name
     }
@@ -63,9 +67,8 @@ exports.getPenalites = async (req, res) => {
       where: whereClause,
       include: [
         {
-          model: Absence,
-          required: true, // Change this to true
-          where: { type: 'penalite' },
+          model: Penalite,
+          required: true, 
           attributes: ['id', 'raison', 'startDate', 'endDate'],
         },
       ],
@@ -77,20 +80,19 @@ exports.getPenalites = async (req, res) => {
 
     // Process the results to calculate nbrDeJour and format the response
     const result = rows.flatMap(user =>
-      user.Absences.map(absence => {
-        const nbrDeJour = moment(absence.endDate).diff(moment(absence.startDate), 'days') + 1;
+      user.Penalites.map(Penalite => {
+        const nbrDeJour = moment(Penalite.endDate).diff(moment(Penalite.startDate), 'days') + 1;
         return {
-          id: absence.id,
+          id: Penalite.id,
           userId: user.id, // Add the user ID to the returned object
           agent: user.name,
-          startDate: absence.startDate,
-          endDate: absence.endDate,
+          startDate: Penalite.startDate,
+          endDate: Penalite.endDate,
           nbrDeJour,
-          raison: absence.raison,
+          raison: Penalite.raison,
         };
       })
     );
-
     // Calculate total pages
     const totalPages = Math.ceil(count / limit);
 
@@ -108,17 +110,13 @@ exports.getPenalites = async (req, res) => {
   }
 };
 
-// Get a specific penalite by ID
-
 // Update a penalite
 exports.updatePenalite = async (req, res) => {
   try {
     const { id } = req.params;
     const { raison, startDate, endDate, ScheduleId, UserId } = req.body;
 
-    const penalite = await Absence.findOne({
-      where: { id, type: 'penalite'}
-    });
+    const penalite = await Penalite.findByPk(id);
 
     if (!penalite) {
       return res.status(404).json({ error: 'Penalite not found' });
@@ -129,6 +127,11 @@ exports.updatePenalite = async (req, res) => {
     penalite.endDate = endDate || penalite.endDate;
     penalite.ScheduleId = ScheduleId || penalite.ScheduleId;
     penalite.UserId = UserId || penalite.UserId;
+
+    // Recalculate nbrDeJour if startDate or endDate changed
+    if (startDate || endDate) {
+      penalite.nbrDeJour = moment(penalite.endDate).diff(moment(penalite.startDate), 'days') + 1;
+    }
 
     await penalite.save();
 
@@ -143,9 +146,7 @@ exports.deletePenalite = async (req, res) => {
   try {
     const { id } = req.params;
  
-    const penalite = await Absence.findOne({
-      where: { id, type: 'penalite'}
-    });
+    const penalite = await Penalite.findByPk(id);
 
     if (!penalite) {
       return res.status(404).json({ error: 'Penalite not found' });

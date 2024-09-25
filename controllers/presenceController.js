@@ -250,7 +250,7 @@ const presenceController = {
           break; // No need to continue checking if we found records
         }
       }
-      let isRecurring = null;
+
 
       // Process the fetched data
       const result = await Promise.all(users.map(async (user) => {
@@ -303,7 +303,7 @@ const presenceController = {
       console.error(error);
       res.status(500).json(error.message);
     }
-  },
+  }
   
 };
 

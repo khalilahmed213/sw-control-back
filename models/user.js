@@ -36,7 +36,12 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   User.associate = function(models) {
-
+    // Define one-to-many relationship with Penalite
+    User.hasMany(models.Penalite, {
+      foreignKey: {
+        allowNull: true
+      }
+    });
     User.belongsToMany(models.Project, { through: 'UserProject', foreignKey: 'userId' });
 
     User.hasMany(models.Presence, { foreignKey: 'UserId', onDelete: 'CASCADE' });
@@ -48,4 +53,4 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   return User;
-}; 
+};
