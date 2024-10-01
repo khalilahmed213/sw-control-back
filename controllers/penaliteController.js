@@ -30,16 +30,14 @@ exports.getPenalites = async (req, res) => {
   try {
     const search = req.query.search || '';
     const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
+    let limit = parseInt(req.query.limit, 10) || 10;
     const sortBy = req.query.sortBy || 'name';
     const sortDesc = req.query.sortDesc === 'true';
     const agentId = req.query.agentId ? parseInt(req.query.agentId, 10) : null;
 
-    if (page < 1 || limit < 1) {
+    if (limit !== -1 && (page < 1 || limit < 1)) {
       return res.status(400).json({ message: 'Invalid pagination parameters' });
     }
-
-    const offset = (page - 1) * limit;
 
     const whereClause = {
       role: 'employe',
@@ -62,7 +60,7 @@ exports.getPenalites = async (req, res) => {
       orderClause = [['name', sortDesc ? 'DESC' : 'ASC']]; // Default to sorting by name
     }
 
-    const { count, rows } = await User.findAndCountAll({
+    const queryOptions = {
       attributes: ['id', 'name'],
       where: whereClause,
       include: [
@@ -73,10 +71,17 @@ exports.getPenalites = async (req, res) => {
         },
       ],
       order: orderClause,
-      offset,
-      limit,
       distinct: true, // Add this to get the correct count when using include
-    });
+    };
+
+    // Apply pagination only if limit is not -1
+    if (limit !== -1) {
+      const offset = (page - 1) * limit;
+      queryOptions.offset = offset;
+      queryOptions.limit = limit;
+    }
+
+    const { count, rows } = await User.findAndCountAll(queryOptions);
 
     // Process the results to calculate nbrDeJour and format the response
     const result = rows.flatMap(user =>
@@ -84,7 +89,7 @@ exports.getPenalites = async (req, res) => {
         const nbrDeJour = moment(Penalite.endDate).diff(moment(Penalite.startDate), 'days') + 1;
         return {
           id: Penalite.id,
-          userId: user.id, // Add the user ID to the returned object
+          UserId: user.id,
           agent: user.name,
           startDate: Penalite.startDate,
           endDate: Penalite.endDate,
@@ -93,14 +98,21 @@ exports.getPenalites = async (req, res) => {
         };
       })
     );
-    // Calculate total pages
-    const totalPages = Math.ceil(count / limit);
+
+    // Calculate pagination details
+    const totalItems = result.length;
+    const totalPages = limit === -1 ? 1 : Math.ceil(count / limit);
+
+    // Adjust limit for response if it was -1
+    if (limit === -1) {
+      limit = totalItems;
+    }
 
     // Send the penalites and pagination data as a JSON response
     res.json({
-      total: count,
+      total: totalItems,
       totalPages,
-      currentPage: page,
+      currentPage: limit === totalItems ? 1 : page,
       itemsPerPage: limit,
       data: result,
     });

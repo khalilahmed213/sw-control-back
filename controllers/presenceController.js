@@ -6,7 +6,7 @@ const presenceController = {
   
     async updatePresence(req, res) {
       try {
-        const { userId, environnement, entree, sortie, entree1, sortie1, commentaires, absence, scheduleId , createdAtdate} = req.body;
+        const { UserId, environnement, entree, sortie, entree1, sortie1, commentaires, absence, ScheduleId , createdAtdate} = req.body;
         const parsedDate = moment(createdAtdate, 'YYYY-MM-DD').startOf('day').toDate();
         const endOfDay = moment(createdAtdate, 'YYYY-MM-DD').endOf('day').toDate();
         const calculateProduction = (startTime, endTime) => {
@@ -16,7 +16,7 @@ const presenceController = {
         };
         const absenceRecord = await Absence.findOne({
           where: {
-            UserId: userId,
+            UserId: UserId,
             createdAt: {
               [Op.gte]: parsedDate,
               [Op.lte]: endOfDay,
@@ -26,7 +26,7 @@ const presenceController = {
         
         const presenceRecord = await Presence.findOne({
           where: {
-            UserId: userId,
+            UserId: UserId,
             createdAt: {
               [Op.gte]: parsedDate,
               [Op.lte]: endOfDay,
@@ -41,7 +41,7 @@ const presenceController = {
               raison: commentaires,
               startDate: parsedDate,
               endDate: endOfDay,
-              ScheduleId: scheduleId
+              ScheduleId: ScheduleId
             }, {
               where: {
                 id: absenceRecord.id
@@ -54,8 +54,8 @@ const presenceController = {
               raison: commentaires,
               startDate: parsedDate,
               endDate: endOfDay,
-              ScheduleId: scheduleId,
-              UserId: userId,
+              ScheduleId: ScheduleId,
+              UserId: UserId,
               createdAt:  createdAtdate
             });
           }
@@ -64,7 +64,7 @@ const presenceController = {
           if (presenceRecord) {
             await Presence.destroy({
               where: {
-                UserId: userId,
+                UserId: UserId,
                 createdAt: {
                   [Op.gte]:  parsedDate ,
                   [Op.lte]: endOfDay
@@ -112,8 +112,8 @@ const presenceController = {
               prodMatin,
               prodApresMidi,
               commentaires,
-              UserId: userId,
-              ScheduleId: scheduleId,
+              UserId: UserId,
+              ScheduleId: ScheduleId,
               createdAt:  createdAtdate
             });
           }
@@ -122,7 +122,7 @@ const presenceController = {
           if (absenceRecord) {
             await Absence.destroy({
               where: {
-                UserId: userId,
+                UserId: UserId,
                 createdAt: {
                   [Op.gte]:  parsedDate ,
                   [Op.lte]: endOfDay
@@ -143,7 +143,7 @@ const presenceController = {
 
   async addPresence(req, res) {
     try {
-      const { userId, environnement, entree, sortie, entree1, sortie1, commentaires, absence, scheduleId, createdAtdate } = req.body;
+      const { UserId, environnement, entree, sortie, entree1, sortie1, commentaires, absence, ScheduleId, createdAtdate } = req.body;
       const parsedDate = moment(createdAtdate, 'YYYY-MM-DD').startOf('day').toDate();
       const endOfDay = moment(createdAtdate, 'YYYY-MM-DD').endOf('day').toDate();
   
@@ -160,8 +160,8 @@ const presenceController = {
           raison: commentaires,
           startDate: parsedDate,
           endDate: endOfDay,
-          ScheduleId: scheduleId,
-          UserId: userId,
+          ScheduleId: ScheduleId,
+          UserId: UserId,
           createdAt: createdAtdate
         });
   
@@ -183,8 +183,8 @@ const presenceController = {
           prodApresMidi,
           prod,
           commentaires,
-          UserId: userId,
-          ScheduleId: scheduleId,
+          UserId: UserId,
+          ScheduleId: ScheduleId,
           createdAt: createdAtdate
         });
   
@@ -267,16 +267,16 @@ const presenceController = {
         };
 
         // Determine if the schedule is recurring
-     /*    const scheduleId = presence ? presence.ScheduleId : (absence ? absence.ScheduleId : null);
-        if (scheduleId && isRecurring === null) {
-          const schedule = await Schedule.findByPk(scheduleId);
+     /*    const ScheduleId = presence ? presence.ScheduleId : (absence ? absence.ScheduleId : null);
+        if (ScheduleId && isRecurring === null) {
+          const schedule = await Schedule.findByPk(ScheduleId);
           if (schedule) {
             isRecurring = schedule.isRecurring;
           }
         } */
 
         return {
-          userId: user.id,
+          UserId: user.id,
           Agent: user.name,
           environnement: presence ? presence.environnement : 'N/A',
           absence: isPresent,

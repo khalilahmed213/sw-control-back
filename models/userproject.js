@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
     const UserProject = sequelize.define('UserProject', {
-      userId: {
+      UserId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {

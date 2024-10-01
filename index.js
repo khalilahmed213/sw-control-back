@@ -10,6 +10,7 @@ const presenceRoutes = require('./routes/presenceRoutes');
 const penaliteRoutes = require('./routes/penaliteRoutes');
 const autorisationRoutes = require('./routes/autorisationRoutes')
 const congeRoutes = require('./routes/congeRoutes')
+const calaculeRoutes = require('./routes/calculeRoutes')
 const { updateSchedule } = require('./cron/scheduleCron');
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api', presenceRoutes);
 app.use('/api', penaliteRoutes);
 app.use('/api',autorisationRoutes);
 app.use('/api',congeRoutes);
+app.use('/api',calaculeRoutes);
 const PORT = process.env.PORT || 3000;
 db.sequelize.sync().then(()=>
 app.listen(PORT, () => {

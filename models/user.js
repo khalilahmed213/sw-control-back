@@ -42,13 +42,13 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true
       }
     });
-    User.belongsToMany(models.Project, { through: 'UserProject', foreignKey: 'userId' });
+    User.belongsToMany(models.Project, { through: 'UserProject', foreignKey: 'UserId' });
 
     User.hasMany(models.Presence, { foreignKey: 'UserId', onDelete: 'CASCADE' });
 
     User.hasMany(models.Absence, { foreignKey: 'UserId', onDelete: 'CASCADE' });
-
-    User.hasOne(models.UserInfo, { foreignKey: 'userId', onDelete: 'CASCADE' }); // One-to-one relationship
+    User.hasMany(models.Penalite, { foreignKey: 'UserId', onDelete: 'CASCADE' });
+    User.hasOne(models.UserInfo, { foreignKey: 'UserId', onDelete: 'CASCADE' });
 
   };
 

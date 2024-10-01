@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     });
   
     UserInfo.associate = function(models) {
-      UserInfo.belongsTo(models.User, { foreignKey: 'userId', onDelete: 'CASCADE' }); // One-to-one relationship
+      UserInfo.belongsTo(models.User, { foreignKey: 'UserId', onDelete: 'CASCADE' }); // One-to-one relationship
     };
   
     return UserInfo;

@@ -1,57 +1,89 @@
 module.exports = (sequelize, DataTypes) => {
-    const Presence = sequelize.define('Presence', {
-      environnement: {
-        type: DataTypes.STRING,
-        allowNull: true
+  const Presence = sequelize.define('Presence', {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false
+    },
+    environnement: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    entree: {
+      type: DataTypes.TIME,
+      allowNull: false
+    },
+    sortie: {
+      type: DataTypes.TIME,
+      allowNull: false
+    },
+    entree1: {
+      type: DataTypes.TIME,
+      allowNull: true
+    },
+    sortie1: {
+      type: DataTypes.TIME,
+      allowNull: true
+    },
+    prod: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    prodMatin: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    prodApresMidi: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    commentaires: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    },
+    UserId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'id'
       },
-      entree: {
-        type: DataTypes.TIME,
-        allowNull: true
+      onUpdate: 'CASCADE',
+      onDelete: 'NO ACTION'
+    },
+    ScheduleId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Schedules',
+        key: 'id'
       },
-      sortie: {
-        type: DataTypes.TIME,
-        allowNull: true
-      },
-      entree1: {
-        type: DataTypes.TIME,
-        allowNull: true
-      },
-      sortie1: {
-        type: DataTypes.TIME,
-        allowNull: true
-      },
-      prod: {
-        type: DataTypes.STRING,
-        allowNull: true
-      },
-      prodMatin: {
-        type: DataTypes.STRING,
-        allowNull: true
-      },
-      prodApresMidi: {
-        type: DataTypes.STRING,
-        allowNull: true
-      },
-      commentaires: {
-        type: DataTypes.TEXT,
-        allowNull: true
-      }
+      onUpdate: 'CASCADE',
+      onDelete: 'NO ACTION'
+    }
+  }, {
+    tableName: 'presences',
+    charset: 'utf8mb4',
+    collate: 'utf8mb4_general_ci'
+  });
+
+  Presence.associate = function(models) {
+    Presence.belongsTo(models.User, {
+      foreignKey: 'UserId',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
     });
-  
-    Presence.associate = function(models) {
-      // Define one-to-many relationship with Schedule
-      Presence.belongsTo(models.Schedule, {
-        foreignKey: {
-          allowNull: true
-        }
-      });
-      // Define many-to-one relationship with User
-      Presence.belongsTo(models.User, {
-        foreignKey: {
-          allowNull: true
-        }
-      });
-    };
-  
-    return Presence;
+    Presence.belongsTo(models.Schedule, {
+      foreignKey: 'ScheduleId',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
+    });
   };
+
+  return Presence;
+};

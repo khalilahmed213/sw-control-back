@@ -15,7 +15,7 @@ exports.createAutorisation = async (req, res) => {
 
     const currentDate = moment().format('DD-MM-YYYY');
     const référence = `A-${autorisationId}-${currentDate}`;
-    const { userId, date, heureDebut, heureFin } = req.body;
+    const { UserId, date, heureDebut, heureFin } = req.body;
     const calculateNbrHeure = (startTime, endTime) => {
       const start = moment(startTime, 'HH:mm');
       const end = moment(endTime, 'HH:mm');
@@ -24,7 +24,7 @@ exports.createAutorisation = async (req, res) => {
     const nbrheures =calculateNbrHeure(heureDebut,heureFin);
     await Autorisation.create({
       référence,
-      userId,
+      UserId,
       date,
       heureDebut,
       heureFin,
@@ -42,10 +42,13 @@ exports.getAllAutorisations = async (req, res) => {
   try {
     const { page, limit, sortBy, sortOrder, agentId } = req.query;
     const whereClause = {};
+
+    // Add filter by agentId if provided and valid
     if (agentId && !isNaN(parseInt(agentId, 10))) {
-      whereClause.userId = parseInt(agentId, 10);
+      whereClause.UserId = parseInt(agentId, 10);
     }
 
+    // Construct the order array based on sortBy and sortOrder
     let order = [];
     if (sortBy === 'User.name') {
       order = [[{ model: User, as: 'User' }, 'name', sortOrder]];
@@ -53,6 +56,7 @@ exports.getAllAutorisations = async (req, res) => {
       order = [[sortBy, sortOrder]];
     }
 
+    // Construct query options
     const queryOptions = {
       where: whereClause,
       include: [{
@@ -60,23 +64,33 @@ exports.getAllAutorisations = async (req, res) => {
         as: 'User',
         attributes: ['id', 'name']
       }],
-      order: order // Use updated order
+      order: order
     };
 
-    // Add pagination if both page and limit are provided
-    if (page && limit) {
-      const offset = (parseInt(page) - 1) * parseInt(limit);
-      queryOptions.limit = parseInt(limit);
+    // Handle pagination if both page and limit are valid
+    const pageInt = parseInt(page);
+    const limitInt = parseInt(limit);
+
+    if (!isNaN(pageInt) && !isNaN(limitInt) && limitInt > 0) {
+      const offset = (pageInt - 1) * limitInt;
+      queryOptions.limit = limitInt;
       queryOptions.offset = offset;
     }
 
+    // Fetch autorisations with filtering, pagination, and sorting
     const autorisations = await Autorisation.findAndCountAll(queryOptions);
 
+    // Calculate pagination details
+    const totalItems = autorisations.count;
+    const totalPages = limitInt > 0 ? Math.ceil(totalItems / limitInt) : 1;
+    const currentPage = pageInt > 0 ? pageInt : 1;
+
+    // Send response
     res.json({
       autorisations: autorisations.rows,
-      totalPages: limit ? Math.ceil(autorisations.count / parseInt(limit)) : 1,
-      currentPage: page ? parseInt(page) : 1,
-      totalItems: autorisations.count
+      totalPages,
+      currentPage,
+      totalItems
     });
   } catch (error) {
     console.error('Error in getAllAutorisations:', error);
@@ -129,18 +143,18 @@ exports.deleteAutorisation = async (req, res) => {
 // Get autorisations for a specific user
 exports.getUserAutorisations = async (req, res) => {
   try {
-    const userId = req.query.userId;
+    const UserId = req.query.UserId;
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
     const sortBy = req.query.sortBy;
     const sortOrder = req.query.sortOrder;
     const offset = (page - 1) * limit;
 
-    if (!userId) {
+    if (!UserId) {
       return res.status(400).json({ message: 'User ID is required' });
     }
     const autorisations = await Autorisation.findAndCountAll({
-      where: { userId: userId },
+      where: { UserId: UserId },
       include: [{ model: User, as: 'User', attributes: ['id', 'name'] }],
       order: [[sortBy, sortOrder]],
       limit: limit,

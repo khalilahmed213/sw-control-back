@@ -23,12 +23,12 @@ async function updateSchedule() {
     } else {
       // If no matching schedule, set schedule with id 34 as selected
       await Schedule.update({ isSelected: false }, { where: {} });
-      const defaultSchedule = await Schedule.findByPk(34);
+      const defaultSchedule = await Schedule.findByPk(1);
       if (defaultSchedule) {
         await defaultSchedule.update({ isSelected: true });
-        console.log(`Default schedule (id: 34) set as selected for ${today}`);
+        console.log(`Default schedule (id: 1) set as selected for ${today}`);
       } else {
-        console.log('Default schedule (id: 34) not found');
+        console.log('Default schedule (id: 1) not found');
       }
     }
   } catch (error) {

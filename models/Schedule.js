@@ -49,14 +49,33 @@ module.exports = (sequelize, DataTypes) => {
   Schedule.associate = function(models) {
     Schedule.hasOne(models.Presence, {
       foreignKey: {
+        name:'ScheduleId',
         allowNull: false
       }
     });
     Schedule.hasOne(models.Absence, {
       foreignKey: {
+        name: 'ScheduleId',
         allowNull: true
       }
     });
+    Schedule.hasOne(models.Penalite, {
+      foreignKey: {
+        name: 'ScheduleId',
+        allowNull: true
+      } });
+      Schedule.hasOne(models.Conge, {
+        foreignKey: {
+          name: 'ScheduleId',
+          allowNull: true
+        } });
+        Schedule.hasOne(models.Autorisation, {
+          foreignKey: {
+            name: 'ScheduleId',
+            allowNull: true
+          } });
+      
+    
   };
 
   return Schedule;

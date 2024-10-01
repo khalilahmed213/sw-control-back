@@ -1,6 +1,7 @@
 const db = require('../models');
 const bcrypt = require('bcrypt');
 const Agent = db.User;
+const UserInfo=db.UserInfo
 const { Op } = require('sequelize');
 
 module.exports = {
@@ -11,14 +12,13 @@ module.exports = {
       const limit = parseInt(req.query.limit, 10) || 10;
       const sortBy = req.query.sortBy;
       const sortDesc = req.query.sortDesc === 'true';
-      // Ensure that page and limit are positive integers
+  
       if (page < 1 || limit < 1) {
         return res.status(400).json({ message: 'Invalid pagination parameters' });
       }
-
+  
       const offset = (page - 1) * limit;
-
-      // Define search criteria
+  
       const whereClause = {
         role: 'employe',
         [Op.or]: [
@@ -28,27 +28,30 @@ module.exports = {
           { address: { [Op.like]: `%${search}%` } }
         ]
       };
-
-      // Define sorting order
-      const orderClause = sortBy ? [[sortBy, sortDesc ? 'DESC' : 'ASC']] : [['name', 'ASC']];
-
-      // Find and count agents based on the search criteria, pagination, and sorting
+  
+      let orderClause;
+      if (sortBy === 'UserInfo.months') {
+        orderClause = [[db.UserInfo, 'months', sortDesc ? 'DESC' : 'ASC']];
+      } else if (sortBy) {
+        orderClause = [[sortBy, sortDesc ? 'DESC' : 'ASC']];
+      } else {
+        orderClause = [['name', 'ASC']];
+      }
+  
       const { count, rows } = await Agent.findAndCountAll({
         where: whereClause,
         limit: limit,
         offset: offset,
         order: orderClause,
-        attributes: ['id', 'name', 'email', 'phoneNumber', 'address'], // Removed months from here
-        include: [{ // Added include for UserInfo
+        attributes: ['id', 'name', 'email', 'phoneNumber', 'address'],
+        include: [{
           model: db.UserInfo,
-          attributes: ['months'] // Selecting months from UserInfo
+          attributes: ['months']
         }]
       });
-
-      // Calculate total pages
+  
       const totalPages = Math.ceil(count / limit);
-
-      // Send the agents and pagination data as a JSON response
+  
       res.json({
         total: count,
         totalPages: totalPages,
@@ -58,7 +61,7 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error fetching agents:', error);
-      res.status(500).json({ message: 'Failed to fetch agents', error: error.message });
+      res.status(500).json({ error: error.message });
     }
   },
 
@@ -67,50 +70,52 @@ module.exports = {
       const { name, email, password, months, role, phoneNumber, address } = req.body;
   
       // Hash the password before saving
-      const hashedPassword = await bcrypt.hash(password, 12); // 12 is the salt rounds
+      const hashedPassword = await bcrypt.hash(password, 12);
   
       const agent = await Agent.create({
         name,
         email,
         password: hashedPassword,
-        months,
         role,
         phoneNumber, // Added phoneNumber
         address // Added address
       });
-  
+      await UserInfo.create({ UserId:agent.id, months });
       res.status(201).json(agent);
     } catch (error) {
       console.error('Error creating agent:', error);
-      res.status(500).json({ message: 'Failed to create agent' });
+      res.status(500).json({ message:error.message });
     }
   },
 
   async updateAgent(req, res) {
     try {
       const { id } = req.params;
-      const { name, email, password, months, phoneNumber, address } = req.body;
+      const { name, email, months, phoneNumber, address } = req.body;
   
-      const agent = await Agent.findByPk(id);
+      const user = await Agent.findByPk(id, {
+        include: [{ model: UserInfo }]
+      });
   
-      if (!agent) {
-        return res.status(404).json({ message: 'Agent not found' });
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
       }
   
-      // If the password is being updated, hash it before saving
-      const updatedFields = { name, email, months, phoneNumber, address };
-      if (password) {
-        updatedFields.password = await bcrypt.hash(password, 12);
+      // Update User fields
+      const updatedFields = { name, email, phoneNumber, address };
+  
+      await user.update(updatedFields);
+  
+      // Update or create UserInfo
+      if (user.UserInfo) {
+        await user.UserInfo.update({ months });
       }
   
-      await agent.update(updatedFields);
-      res.json(agent);
+      res.json({message:"mis à jour avec succé"});
     } catch (error) {
-      console.error('Error updating agent:', error);
-      res.status(500).json({ message: 'Failed to update agent' });
+      res.status(500).json({ message:error.message });
     }
   },
-
   async deleteAgent(req, res) {
     try {
       const { id } = req.params;

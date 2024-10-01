@@ -1,38 +1,65 @@
 module.exports = (sequelize, DataTypes) => {
-    const Penalite = sequelize.define('Penalite', {
-      raison: {
-        type: DataTypes.STRING,
-        allowNull: true
+  const Penalite = sequelize.define('Penalite', {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false
+    },
+    raison: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    startDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+    endDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+    nbrDeJour: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    UserId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'id'
       },
-    
-      startDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: true
+      onUpdate: 'CASCADE',
+      onDelete: 'NO ACTION'
+    },
+    ScheduleId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Schedules',
+        key: 'id'
       },
-      endDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: true
-      },
-      nbrDeJour: {  // Added nbrDeJour field
-        type: DataTypes.INTEGER,
-        allowNull: true
-      },
+      onUpdate: 'CASCADE',
+      onDelete: 'NO ACTION'
+    }
+  }, {
+    tableName: 'penalites',
+    charset: 'utf8mb4',
+    collate: 'utf8mb4_general_ci'
+  });
+
+  Penalite.associate = function(models) {
+    Penalite.belongsTo(models.User, {
+      foreignKey: 'UserId',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
     });
-  
-    Penalite.associate = function(models) {
-        // Define one-to-many relationship with Schedule
-        Penalite.belongsTo(models.Schedule, {
-          foreignKey: {
-            allowNull: true
-          }
-        });
-        // Define many-to-one relationship with User
-        Penalite.belongsTo(models.User, {
-          foreignKey: {
-            allowNull: true
-          }
-        });
-      };
-  
-    return Penalite;
-  }; 
+    Penalite.belongsTo(models.Schedule, {
+      foreignKey: 'ScheduleId',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
+    });
+  };
+
+  return Penalite;
+};

@@ -1,41 +1,72 @@
 module.exports = (sequelize, DataTypes) => {
   const Conge = sequelize.define('Conge', {
-    startDate: {  // Added startDate field
-      type: DataTypes.DATE,
-      allowNull: true
-    },
-    endDate: {  // Added endDate field
-      type: DataTypes.DATE,
-      allowNull: true
-    },
-    reference: {  // Added reference field
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    raison: {  // Added reference field
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    nbrDeJour: {  // Added nbrDeJour field
+    id: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false
     },
-    status: {  // Added status field
+    startDate: {
+      type: DataTypes.DATE,
+      allowNull: false
+    },
+    endDate: {
+      type: DataTypes.DATE,
+      allowNull: false
+    },
+    reference: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: false
     },
-    userId: {  // Foreign key to User
+    raison: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    nbrDeJour: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false
+    },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    UserId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
       references: {
-        model: 'Users',  // Ensure this matches the User model name
+        model: 'Users',
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'NO ACTION'
+    },
+    ScheduleId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Schedules',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'NO ACTION'
     }
+  }, {
+    tableName: 'conges',
+    charset: 'utf8mb4',
+    collate: 'utf8mb4_general_ci'
   });
 
   Conge.associate = function(models) {
-    Conge.belongsTo(models.User, { foreignKey: 'userId' });  // Association with User
+    Conge.belongsTo(models.User, {
+      foreignKey: 'UserId',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
+    });
+    Conge.belongsTo(models.Schedule, {
+      foreignKey: 'ScheduleId',
+      onDelete: 'NO ACTION',
+      onUpdate: 'CASCADE'
+    });
   };
 
   return Conge;
