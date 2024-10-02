@@ -87,19 +87,19 @@ exports.getAbsences = async (req, res) => {
 
 exports.calculateTardiness = async (req, res) => {
   try {
-    const { userId, month, page, limit, sortBy, order} = req.query;
+    const { userId, month, page = 1, limit = 10, sortBy, order = 'asc' } = req.query;
     const currentYear = moment().year();
 
     let whereClause = {};
     if (month) {
-      const startDate = moment(`${currentYear}-${month}-01`).startOf('month').toDate();
+      const startDate = moment(`${currentYear}-${month}-01`, 'YYYY-MM-DD').startOf('month').toDate();
       const endDate = moment(startDate).endOf('month').toDate();
       whereClause.date = {
         [Op.between]: [startDate, endDate]
       };
     }
     if (userId) {
-      whereClause.UserId = userId;
+      whereClause.UserId = parseInt(userId);
     }
 
     let queryOptions = {
@@ -118,24 +118,26 @@ exports.calculateTardiness = async (req, res) => {
 
     // Handle sorting
     if (sortBy === 'userName') {
-      queryOptions.order = [[User, 'name', sortOrder.toUpperCase()]];
-    } else if (sortBy === 'date' || sortBy === 'entree' || sortBy === 'sortie' || sortBy === 'entree1' || sortBy === 'sortie1') {
+      queryOptions.order = [[User, 'name', order]];
+    } else if (['date', 'entree', 'sortie', 'entree1', 'sortie1'].includes(sortBy)) {
       queryOptions.order = [[sortBy, order]];
     }
-    // Note: We can't sort by totalTardiness as it's a calculated field
 
     // Add pagination only if limit is not -1
-    if (parseInt(limit) !== -1) {
-      queryOptions.limit = parseInt(limit);
-      queryOptions.offset = (parseInt(page) - 1) * parseInt(limit);
+    const parsedLimit = parseInt(limit);
+    const parsedPage = parseInt(page);
+    if (parsedLimit !== -1) {
+      queryOptions.limit = parsedLimit;
+      queryOptions.offset = (parsedPage - 1) * parsedLimit;
     }
 
     const { count, rows: presences } = await Presence.findAndCountAll(queryOptions);
 
     let tardinessData = presences.map(presence => {
-      const bool = getScheduleType(presence.Schedule);
+      const isRecurring = getScheduleType(presence.Schedule);
       let totalTardiness = 0;
-      if (bool) {
+      
+      if (isRecurring) {
         totalTardiness = calculateTimeDifference(presence.Schedule.morningStart, presence.entree) +
                          calculateTimeDifference(presence.Schedule.morningEnd, presence.sortie);
       } else {
@@ -144,9 +146,10 @@ exports.calculateTardiness = async (req, res) => {
                          calculateTimeDifference(presence.Schedule.afternoonStart, presence.entree1) +
                          calculateTimeDifference(presence.Schedule.afternoonEnd, presence.sortie1);
       }
+      
       return {
         date: presence.date,
-        userName: presence.User.name,
+        userName: presence.User ? presence.User.name : 'Unknown',
         totalTardiness: formatMinutes(totalTardiness),
         rawTardiness: totalTardiness  // Adding this for sorting purposes
       };
@@ -155,13 +158,13 @@ exports.calculateTardiness = async (req, res) => {
     // Handle sorting by totalTardiness if needed
     if (sortBy === 'totalTardiness') {
       tardinessData.sort((a, b) => {
-        return sortOrder.toLowerCase() === 'asc' ? a.rawTardiness - b.rawTardiness : b.rawTardiness - a.rawTardiness;
+        return order.toLowerCase() === 'asc' ? a.rawTardiness - b.rawTardiness : b.rawTardiness - a.rawTardiness;
       });
     }
 
     const response = {
-      totalPages: parseInt(limit) === -1 ? 1 : Math.ceil(count / parseInt(limit)),
-      currentPage: parseInt(page),
+      totalPages: parsedLimit === -1 ? 1 : Math.ceil(count / parsedLimit),
+      currentPage: parsedPage,
       totalCount: count,
       tardinessData: tardinessData.map(({ date, userName, totalTardiness }) => ({ date, userName, totalTardiness })),
     };
