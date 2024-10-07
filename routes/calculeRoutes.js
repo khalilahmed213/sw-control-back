@@ -5,5 +5,5 @@ const authMiddleware = require('../middleware/authMiddleware');
 // Apply auth middleware to all routes
 router.use(authMiddleware);
 router.get('/absence', authMiddleware, calculeController.getAbsences);
-router.get('/retard', authMiddleware, calculeController.calculateTardiness);
+router.get('/retard', authMiddleware, calculeController.getRetardData);
 module.exports = router;

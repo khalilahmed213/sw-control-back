@@ -42,13 +42,10 @@ exports.getAllAutorisations = async (req, res) => {
   try {
     const { page, limit, sortBy, sortOrder, agentId } = req.query;
     const whereClause = {};
-
-    // Add filter by agentId if provided and valid
     if (agentId && !isNaN(parseInt(agentId, 10))) {
       whereClause.UserId = parseInt(agentId, 10);
     }
 
-    // Construct the order array based on sortBy and sortOrder
     let order = [];
     if (sortBy === 'User.name') {
       order = [[{ model: User, as: 'User' }, 'name', sortOrder]];
@@ -56,7 +53,6 @@ exports.getAllAutorisations = async (req, res) => {
       order = [[sortBy, sortOrder]];
     }
 
-    // Construct query options
     const queryOptions = {
       where: whereClause,
       include: [{
@@ -64,33 +60,23 @@ exports.getAllAutorisations = async (req, res) => {
         as: 'User',
         attributes: ['id', 'name']
       }],
-      order: order
+      order: order // Use updated order
     };
 
-    // Handle pagination if both page and limit are valid
-    const pageInt = parseInt(page);
-    const limitInt = parseInt(limit);
-
-    if (!isNaN(pageInt) && !isNaN(limitInt) && limitInt > 0) {
-      const offset = (pageInt - 1) * limitInt;
-      queryOptions.limit = limitInt;
+    // Add pagination if both page and limit are provided
+    if (page && limit) {
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+      queryOptions.limit = parseInt(limit);
       queryOptions.offset = offset;
     }
 
-    // Fetch autorisations with filtering, pagination, and sorting
     const autorisations = await Autorisation.findAndCountAll(queryOptions);
 
-    // Calculate pagination details
-    const totalItems = autorisations.count;
-    const totalPages = limitInt > 0 ? Math.ceil(totalItems / limitInt) : 1;
-    const currentPage = pageInt > 0 ? pageInt : 1;
-
-    // Send response
     res.json({
       autorisations: autorisations.rows,
-      totalPages,
-      currentPage,
-      totalItems
+      totalPages: limit ? Math.ceil(autorisations.count / parseInt(limit)) : 1,
+      currentPage: page ? parseInt(page) : 1,
+      totalItems: autorisations.count
     });
   } catch (error) {
     console.error('Error in getAllAutorisations:', error);

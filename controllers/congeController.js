@@ -27,13 +27,9 @@ exports.getAllConges = async (req, res) => {
   try {
     const { page, limit, sortBy, sortOrder, UserId } = req.query;
     const whereClause = {};
-
-    // Add filter by UserId if provided
     if (UserId && !isNaN(parseInt(UserId, 10))) {
       whereClause.UserId = UserId;
     } 
-
-    // Construct the order array based on sortBy and sortOrder
     let order = [];
     if (sortBy === 'User.name') {
       order = [[{ model: User, as: 'User' }, 'name', sortOrder]];
@@ -43,44 +39,28 @@ exports.getAllConges = async (req, res) => {
       order = [[sortBy, sortOrder]];
     }
 
-    // Construct query options
     const queryOptions = {
       where: whereClause,
       include: [
-        { 
-          model: User, 
-          as: 'User', 
-          attributes: ['id', 'name'], 
-          include: [{ model: UserInfo, as: 'UserInfo', attributes: ['soldeConge'] }] // Include UserInfo through User
-        }
+        { model: User, as: 'User', attributes: ['id', 'name'], include: [{ model: UserInfo, as: 'UserInfo', attributes: ['soldeConge'] }] } // Include UserInfo through User
       ],
-      order: order // Use the constructed order array
+      order: order // Use updated order
     };
 
-    // Handle pagination if both page and limit are valid
-    const pageInt = parseInt(page);
-    const limitInt = parseInt(limit);
-
-    if (!isNaN(pageInt) && !isNaN(limitInt) && limitInt > 0) {
-      const offset = (pageInt - 1) * limitInt;
-      queryOptions.limit = limitInt;
+    // Add pagination if both page and limit are provided
+    if (page && limit) {
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+      queryOptions.limit = parseInt(limit);
       queryOptions.offset = offset;
     }
 
-    // Fetch conges with filtering, pagination, and sorting
     const conges = await Conge.findAndCountAll(queryOptions);
 
-    // Calculate pagination details
-    const totalItems = conges.count;
-    const totalPages = limitInt > 0 ? Math.ceil(totalItems / limitInt) : 1;
-    const currentPage = pageInt > 0 ? pageInt : 1;
-
-    // Send response
     res.json({
       conges: conges.rows,
-      totalPages,
-      currentPage,
-      totalItems
+      totalPages: limit ? Math.ceil(conges.count / parseInt(limit)) : 1,
+      currentPage: page ? parseInt(page) : 1,
+      totalItems: conges.count
     });
   } catch (error) {
     console.error('Error in getAllConges:', error);

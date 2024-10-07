@@ -1,6 +1,7 @@
-const { Op } = require('sequelize');
-const { Absence, User,Presence,Schedule } = require('../models');
-const moment = require('moment');
+const { Op } = require("sequelize");
+const { Absence, User, Presence, Schedule } = require("../models");
+const moment = require("moment");
+const presence = require("../models/presence");
 
 exports.getAbsences = async (req, res) => {
   try {
@@ -22,11 +23,14 @@ exports.getAbsences = async (req, res) => {
     // Add month filter if provided, always using the current year
     if (month) {
       const currentYear = moment().year();
-      const startDate = moment(`${currentYear}-${month}-01`, 'YYYY-MM-DD').startOf('month');
-      const endDate = moment(startDate).endOf('month');
+      const startDate = moment(
+        `${currentYear}-${month}-01`,
+        "YYYY-MM-DD"
+      ).startOf("month");
+      const endDate = moment(startDate).endOf("month");
 
       whereClause.date = {
-        [Op.between]: [startDate.toDate(), endDate.toDate()]
+        [Op.between]: [startDate.toDate(), endDate.toDate()],
       };
     }
 
@@ -35,8 +39,8 @@ exports.getAbsences = async (req, res) => {
 
     // Prepare order array based on sortBy
     let orderArray;
-    if (sortBy === 'User.name') {
-      orderArray = [[{ model: User, as: 'User' }, 'name', order]];
+    if (sortBy === "User.name") {
+      orderArray = [[{ model: User, as: "User" }, "name", order]];
     } else {
       orderArray = [[sortBy, order]];
     }
@@ -44,11 +48,13 @@ exports.getAbsences = async (req, res) => {
     // Define the query options
     const queryOptions = {
       where: whereClause,
-      include: [{ 
-        model: User, 
-        as: 'User',
-        attributes: ['id', 'name'] 
-      }],
+      include: [
+        {
+          model: User,
+          as: "User",
+          attributes: ["id", "name"],
+        },
+      ],
       order: orderArray,
     };
 
@@ -70,126 +76,97 @@ exports.getAbsences = async (req, res) => {
 
     // Send response
     return res.status(200).json({
-       absences: absences.rows,
+      absences: absences.rows,
       pagination: {
         totalItems,
         totalPages,
         currentPage,
         limit: limit > 0 ? limit : totalItems, // Use totalItems as limit when no limit is applied
-      }
+      },
     });
-
   } catch (error) {
-    console.error('Error fetching absences:', error);
+    console.error("Error fetching absences:", error);
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.calculateTardiness = async (req, res) => {
-  try {
-    const { userId, month, page = 1, limit = 10, sortBy, order = 'asc' } = req.query;
-    const currentYear = moment().year();
-
-    let whereClause = {};
-    if (month) {
-      const startDate = moment(`${currentYear}-${month}-01`, 'YYYY-MM-DD').startOf('month').toDate();
-      const endDate = moment(startDate).endOf('month').toDate();
-      whereClause.date = {
-        [Op.between]: [startDate, endDate]
-      };
-    }
-    if (userId) {
-      whereClause.UserId = parseInt(userId);
-    }
-
-    let queryOptions = {
-      where: whereClause,
-      include: [
-        {
-          model: Schedule,
-          attributes: ['morningStart', 'morningEnd', 'afternoonStart', 'afternoonEnd', 'isRecurring']
-        },
-        {
-          model: User,
-          attributes: ['name']
-        }
-      ],
-    };
-
-    // Handle sorting
-    if (sortBy === 'userName') {
-      queryOptions.order = [[User, 'name', order]];
-    } else if (['date', 'entree', 'sortie', 'entree1', 'sortie1'].includes(sortBy)) {
-      queryOptions.order = [[sortBy, order]];
-    }
-
-    // Add pagination only if limit is not -1
-    const parsedLimit = parseInt(limit);
-    const parsedPage = parseInt(page);
-    if (parsedLimit !== -1) {
-      queryOptions.limit = parsedLimit;
-      queryOptions.offset = (parsedPage - 1) * parsedLimit;
-    }
-
-    const { count, rows: presences } = await Presence.findAndCountAll(queryOptions);
-
-    let tardinessData = presences.map(presence => {
-      const isRecurring = getScheduleType(presence.Schedule);
-      let totalTardiness = 0;
-      
-      if (isRecurring) {
-        totalTardiness = calculateTimeDifference(presence.Schedule.morningStart, presence.entree) +
-                         calculateTimeDifference(presence.Schedule.morningEnd, presence.sortie);
-      } else {
-        totalTardiness = calculateTimeDifference(presence.Schedule.morningStart, presence.entree) +
-                         calculateTimeDifference(presence.Schedule.morningEnd, presence.sortie) +
-                         calculateTimeDifference(presence.Schedule.afternoonStart, presence.entree1) +
-                         calculateTimeDifference(presence.Schedule.afternoonEnd, presence.sortie1);
+exports.getRetardData = async (req, res) => {
+    try {
+      const { userId, month } = req.query;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const sortBy = req.query.sortBy || 'date';
+      const order = req.query.order || 'DESC';
+  
+      // Construct where clause
+      const whereClause = {};
+  
+      // Add userId filter if provided
+      if (userId) {
+        whereClause.UserId = userId;
       }
-      
-      return {
-        date: presence.date,
-        userName: presence.User ? presence.User.name : 'Unknown',
-        totalTardiness: formatMinutes(totalTardiness),
-        rawTardiness: totalTardiness  // Adding this for sorting purposes
-      };
-    });
-
-    // Handle sorting by totalTardiness if needed
-    if (sortBy === 'totalTardiness') {
-      tardinessData.sort((a, b) => {
-        return order.toLowerCase() === 'asc' ? a.rawTardiness - b.rawTardiness : b.rawTardiness - a.rawTardiness;
+  
+      // Add month filter if provided, always using the current year
+      if (month) {
+        const currentYear = moment().year();
+        const startDate = moment(`${currentYear}-${month}-01`, "YYYY-MM-DD").startOf("month");
+        const endDate = moment(startDate).endOf("month");
+  
+        whereClause.date = {
+          [Op.between]: [startDate.toDate(), endDate.toDate()],
+        };
+      }
+  
+      let orderArray;
+      if (sortBy === "User.name") {
+        orderArray = [[{ model: User, as: "User" }, "name", order]];
+      } else {
+        orderArray = [[sortBy, order]];
+      }
+      const offset = (page - 1) * limit;
+  
+      // Get total count and fetch paginated data
+      const { rows, count } = await Presence.findAndCountAll({
+        where: whereClause,
+        attributes: ["retardm", "retardam", "retardtotal", "date"],
+        include: [
+          {
+            model: User,
+            as: "User",
+            attributes: ["name"],
+          },
+        ],
+        order: orderArray,
+        limit: limit,
+        offset: offset
       });
+  
+      res.status(200).json({
+        totalRecords: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        records: rows,
+      });
+    } catch (error) {
+      console.error("Error fetching retard data: ", error);
+      res.status(500).json({ error: "An error occurred while fetching retard data" });
     }
-
-    const response = {
-      totalPages: parsedLimit === -1 ? 1 : Math.ceil(count / parsedLimit),
-      currentPage: parsedPage,
-      totalCount: count,
-      tardinessData: tardinessData.map(({ date, userName, totalTardiness }) => ({ date, userName, totalTardiness })),
-    };
-
-    res.json(response);
-  } catch (error) {
-    console.error('Error calculating tardiness:', error);
-    res.status(500).json({ message: 'Failed to calculate tardiness', error: error.message });
-  }
-};
+  };
 
 function getScheduleType(schedule) {
- if(schedule.isRecuring){
-  return ture
- }else{
-  return false
- }
+  if (schedule.isRecuring) {
+    return ture;
+  } else {
+    return false;
+  }
 }
 
 function calculateTimeDifference(scheduledTime, actualTime) {
   if (!scheduledTime || !actualTime) return 0;
-  const scheduled = moment(scheduledTime, 'HH:mm:ss');
-  const actual = moment(actualTime, 'HH:mm:ss');
+  const scheduled = moment(scheduledTime, "HH:mm:ss");
+  const actual = moment(actualTime, "HH:mm:ss");
   if (actual.isAfter(scheduled)) {
-    return actual.diff(scheduled, 'minutes');
+    return actual.diff(scheduled, "minutes");
   }
   return 0;
 }

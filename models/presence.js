@@ -56,6 +56,18 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'NO ACTION'
     },
+    retardm: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    retardam: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    retardtotal: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
     ScheduleId: {
       type: DataTypes.INTEGER,
       allowNull: false,
